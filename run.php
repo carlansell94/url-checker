@@ -187,21 +187,31 @@ function fileWriter($res)
 }
 
 
-function errorMessage()
+function errorMessage(string $error)
 {
     echo '<link rel="stylesheet" href="style.css">
           <div id="container">
               <h1>URL checker</h1>
               <p>Because sometimes, your shit gets moved</p>
-              <div id="inner-container">Either no file, or an invalid file, has been selected. Please stop trying to beak my thing &#9785;</div>
+              <div id="inner-container">' . $error . '. Please stop trying to beak my thing &#9785;</div>
               <input id="return-button" type="submit" value="Ok" name="submit2" onclick="location.href=\'./\';" />
           </div>';
 }
 
 
 // Check uploaded file is valid
-if (!isset($_FILES['file']) || $_FILES['file']['error'] > 0 || mime_content_type($_FILES['file']['tmp_name']) != 'text/plain') {
-    errorMessage();
+$finfo = new finfo(FILEINFO_MIME_TYPE);
+$file_type = $finfo->file($_FILES['file']['tmp_name']);
+
+if ($_FILES['file']['error'] == 4) {
+    $error = "No file has been selected";
+    errorMessage($error);
+} else if ($file_type != 'text/plain') {
+    $error = "Uploaded file type is an incorrect type ($file_type)";
+    errorMessage($error); 
+} else if ($_FILES['file']['error'] > 0) {
+    $error = "An error has occurred";
+    errorMessage($error);
 } else {
     $data = parseFile($_FILES['file']['tmp_name']);
     $res = getUrlHeaders($data);
