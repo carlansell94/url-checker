@@ -194,7 +194,7 @@ function errorMessage()
               <h1>URL checker</h1>
               <p>Because sometimes, your shit gets moved</p>
               <div id="inner-container">Either no file, or an invalid file, has been selected. Please stop trying to beak my thing &#9785;</div>
-              <input id="return-button" type="submit" value="Ok" name="submit2" onclick="location.href=\'index.php\';" />
+              <input id="return-button" type="submit" value="Ok" name="submit2" onclick="location.href=\'./\';" />
           </div>';
 }
 
