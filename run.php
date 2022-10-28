@@ -65,13 +65,16 @@ function parseFile($file) : array
     return $result;
 }
 
-
-function getUrlHeaders($data) : array
+function getUrlHeaders($urls) : array
 {
-    $assoc = array();
+    $request_id = 0;
+    $responses = array();
+
+    $urls = array_reverse($urls);
+    $data_size = count($urls);
 
     // Store field names at the start of the array
-    $assoc[-1] = array_shift($data);
+    $responses[-1] = array_pop($urls);
 
     // Set cURL options
     $curl_opts = array(
@@ -81,26 +84,29 @@ function getUrlHeaders($data) : array
     );
    
     // Set max number of simultaneous requests
-    $data_size = count($data);    
+    $data_size = count($urls);    
     $max_requests = 150 < $data_size ? 150 : $data_size;
 
     // Create master curl_multi handle
     $mh = curl_multi_init();
+
+    $add_handle = function($id) use (&$urls, &$mh, &$curl_opts, &$responses) {
+        $responses[$id] = array_pop($urls);
+
+        if ($ch = curl_init($responses[$id]->getAddress())) {
+            curl_setopt_array($ch, $curl_opts);
+
+            if ($id !== null) {
+                curl_setopt($ch, CURLOPT_PRIVATE, $id);
+            }
+
+            curl_multi_add_handle($mh, $ch);
+        }
+    };
     
     // Create initial requests
-    for ($i = 0; $i < $max_requests; $i++) {
-        $ch = curl_init();
-        $id = (int) $ch;
-
-        // Store each URL object in an array, using cURL handle ID as index. This ensures returned data can be attached to the correct object
-        $assoc[$id] = array_pop($data);
-        $curl_opts[CURLOPT_URL] = $assoc[$id]->getAddress();
-        $curl_opts[CURLOPT_PRIVATE] = $id;
-
-        curl_setopt_array($ch, $curl_opts);
-
-        // Add cURL handle to processing queue
-        curl_multi_add_handle($mh, $ch);
+    for ($request_id; $request_id < $max_requests; $request_id++) {
+        $add_handle($request_id);
     }
 
     do {
@@ -114,35 +120,24 @@ function getUrlHeaders($data) : array
         // Return queue might contain multiple handles, loop until queue is empty
         while ($returned = curl_multi_info_read($mh)) {
             // Get id of returned cURL handle
-            $id = (int) $returned['handle'];
+            $id = curl_getinfo($returned['handle'], CURLINFO_PRIVATE);
             $info = curl_getinfo($returned['handle']);
 
             // Store returned data and remove handle from processing queue
-            $assoc[$id]->setHttpStatus($info['http_code']);
-            $assoc[$id]->setRedirectUrl($info['redirect_url']);
+            $responses[$id]->setHttpStatus($info['http_code']);
+            $responses[$id]->setRedirectUrl($info['redirect_url']);
             curl_multi_remove_handle($mh, $returned['handle']);
 
-            // Get next URL
-            $next_row = array_shift($data);
-
             // Create a new handle for the next URL
-            if (isset($next_row)) {
-                $ch = curl_init();
-                $id = (int) $ch;
-                    
-                $assoc[$id] = $next_row;
-                $curl_opts[CURLOPT_URL] = $next_row->getAddress();
-                $curl_opts[CURLOPT_PRIVATE] = $id;
-          
-                curl_setopt_array($ch, $curl_opts);
-                curl_multi_add_handle($mh, $ch);
-            }          
+            if ($urls) {
+                $add_handle($request_id);
+                $request_id++;
+            }       
         }
     } while ($running > 0);
 
     // Close master handle
-    curl_multi_close($mh);
-    return $assoc;
+    return $responses;
 }
 
 
@@ -206,7 +201,7 @@ $file_type = $finfo->file($_FILES['file']['tmp_name']);
 if ($_FILES['file']['error'] == 4) {
     $error = "No file has been selected";
     errorMessage($error);
-} else if ($file_type != 'text/plain') {
+} else if ($file_type != 'text/csv' && $file_type != 'text/plain') {
     $error = "Uploaded file type is an incorrect type ($file_type)";
     errorMessage($error); 
 } else if ($_FILES['file']['error'] > 0) {
