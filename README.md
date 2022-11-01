@@ -1,3 +1,6 @@
+![Composer workflow](https://github.com/carlansell94/url_checker/actions/workflows/composer.yml/badge.svg?event=push)
+![PHPStan workflow](https://github.com/carlansell94/url_checker/actions/workflows/phpstan.yml/badge.svg?event=push)
+
 A PHP based URL checker, using cURL multi.
 
 On a Raspberry Pi 3B+, this app was able to check 50,000 URLs in just over 30 seconds.
