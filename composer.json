@@ -1,0 +1,27 @@
+{
+    "name": "carlansell94/urlchecker",
+    "description": "Check the response status of a URL, or set of URLs.",
+    "keywords": [
+        "url", "check"
+    ],
+    "license": "GPL-3.0-or-later",
+    "authors": [
+        {
+            "name": "Carl Ansell",
+            "homepage": "https://www.carlansell.co.uk",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": ">=8.0"
+    },
+    "require-dev": {
+        "phpstan/phpstan": "*",
+        "squizlabs/php_codesniffer": "3.*"
+    },
+    "autoload": {
+        "psr-4": {
+            "carlansell94\\UrlChecker\\": "src"
+        }
+    }
+}
